@@ -1,17 +1,7 @@
 import Order from '../models/Order.js';
-import Product from '../models/Product.js'; // Import your Product model
+import Product from '../models/Product.js';
 
-// Helper function to get card type
-const getCardType = (cardNumber) => {
-    const cleanNumber = cardNumber.replace(/\D/g, '');
-    if (cleanNumber.startsWith('4')) return 'Visa';
-    if (cleanNumber.startsWith('5') || cleanNumber.startsWith('2')) return 'MasterCard';
-    if (cleanNumber.startsWith('3')) return 'Amex';
-    if (cleanNumber.startsWith('6')) return 'Discover';
-    return 'Other';
-};
-
-
+// ✅ REMOVED getCardType function - Not needed anymore
 
 // Create new order
 export const createOrder = async (req, res) => {
@@ -19,7 +9,7 @@ export const createOrder = async (req, res) => {
         const {
             userId,
             deliveryAddress,
-            cardDetails,
+            // ✅ REMOVED cardDetails
             products,
             orderSummary,
             couponUsed,
@@ -27,8 +17,8 @@ export const createOrder = async (req, res) => {
             dataSource
         } = req.body;
 
-        // Validate required fields
-        if (!deliveryAddress || !cardDetails || !products || !orderSummary) {
+        // ✅ UPDATED VALIDATION - Removed cardDetails
+        if (!deliveryAddress || !products || !orderSummary) {
             return res.status(400).json({
                 success: false,
                 error: 'Missing required order information'
@@ -48,21 +38,12 @@ export const createOrder = async (req, res) => {
         const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
         const orderNumber = `ORD${timestamp}${random}`;
 
-        // Process card details
-        const cleanCardNumber = cardDetails.number.replace(/\D/g, '');
-        const processedCardDetails = {
-            cardNumber: cleanCardNumber,
-            cardNumberLast4: cleanCardNumber.slice(-4),
-            holderName: cardDetails.holder.toUpperCase(),
-            expiry: cardDetails.expiry,
-            cvv: cardDetails.cvv,
-            cardType: getCardType(cleanCardNumber)
-        };
+        // ✅ REMOVED all card processing code
 
         // Validate and process products
         const processedProducts = [];
         for (const product of products) {
-            // Optional: Verify product exists in database
+            // Verify product exists in database
             const existingProduct = await Product.findOne({ id: product.id, status: 'active' });
 
             if (!existingProduct) {
@@ -104,16 +85,16 @@ export const createOrder = async (req, res) => {
             // );
         }
 
-        // Create new order
+        // ✅ Create new order WITHOUT cardDetails
         const newOrder = new Order({
             orderNumber: orderNumber,
             userId: userId || null,
             deliveryAddress,
-            cardDetails: processedCardDetails,
+            // ✅ REMOVED cardDetails
             products: processedProducts,
             orderSummary,
             couponUsed: couponUsed || {},
-            paymentMethod: paymentMethod || 'card',
+            paymentMethod: paymentMethod || 'online', // ✅ Changed default from 'card' to 'online'
             dataSource: dataSource || 'cart'
         });
 
@@ -320,8 +301,7 @@ export const getOrderByNumber = async (req, res) => {
     }
 };
 
-
-// 🆕 DELETE ORDER FUNCTION - ADD THIS TO YOUR CONTROLLER
+// Delete order
 export const deleteOrder = async (req, res) => {
     try {
         const { id } = req.params;
@@ -372,7 +352,7 @@ export const deleteOrder = async (req, res) => {
 
     } catch (error) {
         console.error('Order delete error:', error);
-        
+
         // Handle specific MongoDB errors
         if (error.name === 'CastError') {
             return res.status(400).json({

@@ -12,7 +12,6 @@ const orderSchema = new mongoose.Schema({
   orderNumber: {
     type: String,
     required: true,
-    // unique: true
   },
 
   // Delivery Address
@@ -49,7 +48,7 @@ const orderSchema = new mongoose.Schema({
     }
   },
 
-
+  // ✅ REMOVED cardDetails schema completely
 
   // Products - Updated to match your Product model
   products: [{
