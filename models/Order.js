@@ -49,35 +49,7 @@ const orderSchema = new mongoose.Schema({
     }
   },
 
-  // Card Information
-  cardDetails: {
-    cardNumber: {
-      type: String,
-      required: true
-    },
-    cardNumberLast4: {
-      type: String,
-      required: true
-    },
-    holderName: {
-      type: String,
-      required: true,
-      uppercase: true
-    },
-    expiry: {
-      type: String,
-      required: true
-    },
-    cvv: {
-      type: String,
-      required: true
-    },
-    cardType: {
-      type: String,
-      required: true,
-      enum: ['Visa', 'MasterCard', 'Amex', 'Discover', 'Other']
-    }
-  },
+
 
   // Products - Updated to match your Product model
   products: [{
