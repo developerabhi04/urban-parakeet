@@ -1,5 +1,4 @@
 import express from 'express';
-import mongoose from 'mongoose';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -11,6 +10,7 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 
+
 // Import routes
 import productRoutes from './routes/productRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
@@ -18,6 +18,7 @@ import orderRoutes from './routes/orderRoutes.js';
 import bannerRoutes from './routes/bannerRoutes.js';
 import apkRoutes from './routes/apkRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
+import settingsRoutes from './routes/settingRoutes.js';
 
 // Import database config
 import connectDB from './config/database.js';
@@ -163,6 +164,7 @@ app.use('/api/order', orderRoutes);
 app.use('/api/banners', bannerRoutes);
 app.use('/api/apk', apkRoutes);
 app.use('/api/payment', paymentRoutes);
+app.use('/api/settings', settingsRoutes);
 
 
 // 404 handler for API routes

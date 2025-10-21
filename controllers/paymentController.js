@@ -1,25 +1,25 @@
 import crypto from 'crypto';
 import Transaction from '../models/Transaction.js';
 import Order from '../models/Order.js';
+import Settings from '../models/Setting.js'; // ✅ NEW
 
-
-// Your merchant UPI ID where money will be received
-const MERCHANT_UPI = 'mstandwafuelcentre@sbi';
+// ✅ REMOVED hardcoded UPI - will fetch from database
+// const MERCHANT_UPI = 'mstandwafuelcentre@sbi';
 const MERCHANT_SECRET = process.env.MERCHANT_SECRET || 'my_super_secret_key';
 
-// Generate unique transaction ID (same as PHP uniqid)
+// Generate unique transaction ID
 const generateTransactionId = () => {
     const timestamp = Date.now().toString(36);
     const random = Math.random().toString(36).substring(2, 15);
     return `cw${timestamp}${random}`;
 };
 
-// Generate random note (same as PHP)
+// Generate random note
 const generateNote = () => {
     return `s${Math.floor(Math.random() * 900) + 100}`;
 };
 
-// Create HMAC signature (same as PHP hash_hmac)
+// Create HMAC signature
 const createSignature = (payload) => {
     return crypto
         .createHmac('sha256', MERCHANT_SECRET)
@@ -53,9 +53,15 @@ export const createPayment = async (req, res) => {
             });
         }
 
-        // Generate transaction details (same as PHP)
+        // ✅ FETCH MERCHANT UPI FROM DATABASE
+        const settings = await Settings.getSettings();
+        const MERCHANT_UPI = settings.merchantUPI;
+
+        console.log('💳 Using Merchant UPI:', MERCHANT_UPI);
+
+        // Generate transaction details
         const tid = generateTransactionId();
-        const expires = Math.floor(Date.now() / 1000) + 600; // 10 minutes in seconds
+        const expires = Math.floor(Date.now() / 1000) + 600; // 10 minutes
         const note = generateNote();
 
         let response;
@@ -64,18 +70,18 @@ export const createPayment = async (req, res) => {
         let redirectUrl;
 
         if (paymentType === 'phonepe') {
-            // ================= PHONEPE (Exact PHP logic) ==================
+            // ================= PHONEPE ==================
             const payloadJson = {
                 contact: {
                     cbsName: "",
                     nickName: "",
-                    vpa: MERCHANT_UPI, // Your UPI ID
+                    vpa: MERCHANT_UPI,
                     type: "VPA"
                 },
                 p2pPaymentCheckoutParams: {
                     note: note,
                     isByDefaultKnownContact: true,
-                    initialAmount: Math.floor(paymentAmount * 100), // Convert to paise
+                    initialAmount: Math.floor(paymentAmount * 100),
                     currency: "INR",
                     checkoutType: "DEFAULT",
                     transactionContext: "p2p"
@@ -87,7 +93,6 @@ export const createPayment = async (req, res) => {
             signature = createSignature(payloadB64);
             const payloadUrlenc = encodeURIComponent(payloadB64);
 
-            // PhonePe deep link - opens PhonePe app directly
             redirectUrl = `phonepe://native?data=${payloadUrlenc}&id=p2ppayment`;
 
             response = {
@@ -100,9 +105,9 @@ export const createPayment = async (req, res) => {
             };
 
         } else if (paymentType === 'paytm') {
-            // ================= PAYTM (Exact PHP logic) ==================
+            // ================= PAYTM ==================
             const queryParams = new URLSearchParams({
-                pa: MERCHANT_UPI, // Your UPI ID
+                pa: MERCHANT_UPI,
                 am: paymentAmount,
                 tn: note,
                 pn: MERCHANT_UPI,
@@ -116,7 +121,6 @@ export const createPayment = async (req, res) => {
                 featuretype: 'money_transfer'
             });
 
-            // Paytm deep link - opens Paytm app directly
             redirectUrl = `paytmmp://cash_wallet?${queryParams.toString()}`;
 
             const payloadJson = {
@@ -157,7 +161,7 @@ export const createPayment = async (req, res) => {
 
         await transaction.save();
 
-        // Return response (same format as PHP)
+        // Return response
         res.status(200).json(response);
 
     } catch (error) {
@@ -169,12 +173,8 @@ export const createPayment = async (req, res) => {
     }
 };
 
+// ✅ Keep other functions (checkPaymentStatus, verifyPayment) same as before
 
-/**
- * @desc    Check payment status
- * @route   GET /api/payment/status/:tid
- * @access  Public
- */
 export const checkPaymentStatus = async (req, res) => {
     try {
         const { tid } = req.params;
@@ -193,7 +193,6 @@ export const checkPaymentStatus = async (req, res) => {
             });
         }
 
-        // Check if expired
         if (transaction.status === 'pending' && new Date() > transaction.expires) {
             transaction.status = 'expired';
             await transaction.save();
@@ -218,11 +217,6 @@ export const checkPaymentStatus = async (req, res) => {
     }
 };
 
-/**
- * @desc    Manually verify payment (after user confirms)
- * @route   POST /api/payment/verify
- * @access  Public
- */
 export const verifyPayment = async (req, res) => {
     try {
         const { tid, status, signature } = req.body;
@@ -241,7 +235,6 @@ export const verifyPayment = async (req, res) => {
             });
         }
 
-        // Verify signature if provided
         if (signature) {
             const expectedSig = createSignature(transaction.payload);
             if (signature !== expectedSig) {
@@ -251,19 +244,16 @@ export const verifyPayment = async (req, res) => {
             }
         }
 
-        // Check if already processed
         if (transaction.status !== 'pending') {
             return res.status(400).json({
                 error: `Transaction already ${transaction.status}`
             });
         }
 
-        // Update transaction status
         transaction.status = status;
         transaction.completedAt = new Date();
         await transaction.save();
 
-        // Update order if exists
         if (transaction.orderId) {
             const order = await Order.findById(transaction.orderId);
             if (order) {
@@ -295,15 +285,12 @@ export const verifyPayment = async (req, res) => {
     }
 };
 
-/**
- * @desc    Get merchant UPI ID (for frontend)
- * @route   GET /api/payment/merchant-upi
- * @access  Public
- */
+// ✅ UPDATED: Fetch from database
 export const getMerchantUPI = async (req, res) => {
     try {
+        const settings = await Settings.getSettings();
         res.status(200).json({
-            upi: MERCHANT_UPI
+            upi: settings.merchantUPI
         });
     } catch (error) {
         res.status(500).json({
