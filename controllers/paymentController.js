@@ -4,7 +4,7 @@ import Order from '../models/Order.js';
 
 
 // Your merchant UPI ID where money will be received
-const MERCHANT_UPI = 'rahulkewat819.28333095@sbi';
+const MERCHANT_UPI = 'mstandwafuelcentre@sbi';
 const MERCHANT_SECRET = process.env.MERCHANT_SECRET || 'my_super_secret_key';
 
 // Generate unique transaction ID (same as PHP uniqid)

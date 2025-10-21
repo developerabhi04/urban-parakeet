@@ -2,7 +2,6 @@ import Product from '../models/Product.js';
 import Admin from '../models/Admin.js';
 import { deleteImage, deleteMultipleImages } from '../config/cloudinary.js';
 import { generateToken } from '../middleware/auth.js';
-import { validationResult } from 'express-validator';
 import generateId from '../utils/generateId.js';
 
 // @desc    Admin login
