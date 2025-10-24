@@ -50,6 +50,9 @@ const transactionSchema = new mongoose.Schema({
   note: {
     type: String
   },
+  upiRef:{
+    type: String
+  },
   expires: {
     type: Date,
     required: true,
