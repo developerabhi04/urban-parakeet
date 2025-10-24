@@ -8,6 +8,7 @@ import Settings from '../models/Setting.js';
 const MERCHANT_SECRET = process.env.MERCHANT_SECRET || 'my_super_secret_key';
 
 
+
 // Generate unique transaction ID
 const generateTransactionId = () => {
     const timestamp = Date.now().toString(36);
