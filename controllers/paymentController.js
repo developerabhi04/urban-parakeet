@@ -66,10 +66,21 @@ export const createPayment = async (req, res) => {
         const expires = Math.floor(Date.now() / 1000) + 600; // 10 minutes
         const note = generateNote();
 
+        // ✅ Detect device from User-Agent
+        const userAgent = req.headers['user-agent'] || '';
+        const isIOS = /iPad|iPhone|iPod/.test(userAgent);
+        const isAndroid = /Android/.test(userAgent);
+
+        console.log(`📱 Device detected: ${isIOS ? 'iOS' : isAndroid ? 'Android' : 'Desktop'}`);
+
+
         let response;
         let payloadB64;
         let signature;
         let redirectUrl;
+        let iosUrl;
+        let androidUrl;
+
 
         if (paymentType === 'phonepe') {
             // PhonePe payment
@@ -95,15 +106,29 @@ export const createPayment = async (req, res) => {
             signature = createSignature(payloadB64);
             const payloadUrlenc = encodeURIComponent(payloadB64);
 
-            redirectUrl = `phonepe://native?data=${payloadUrlenc}&id=p2ppayment`;
+            // ✅ Android deep link
+            androidUrl = `phonepe://native?data=${payloadUrlenc}&id=p2ppayment`;
+
+            // ✅ iOS universal link (UPI Intent format)
+            iosUrl = `phonepe://pay?pa=${encodeURIComponent(MERCHANT_UPI)}&pn=Merchant&am=${paymentAmount}&tn=${encodeURIComponent(note)}&cu=INR`;
+
+            // Choose appropriate URL based on device
+            if (isIOS) {
+                redirectUrl = iosUrl;
+            } else {
+                redirectUrl = androidUrl;
+            }
 
             response = {
                 redirect_url: redirectUrl,
+                ios_url: iosUrl,
+                android_url: androidUrl,
                 payload: payloadB64,
                 sig: signature,
                 expires: expires,
                 tid: tid,
-                amount: paymentAmount.toString()
+                amount: paymentAmount.toString(),
+                device: isIOS ? 'iOS' : isAndroid ? 'Android' : 'Desktop'
             };
 
         } else if (paymentType === 'paytm') {
@@ -125,6 +150,8 @@ export const createPayment = async (req, res) => {
 
             redirectUrl = `paytmmp://cash_wallet?${queryParams.toString()}`;
 
+            iosUrl = `paytm://pay?${queryParams.toString()}`;
+
             const payloadJson = {
                 redirect: redirectUrl,
                 tid: tid,
@@ -137,11 +164,14 @@ export const createPayment = async (req, res) => {
 
             response = {
                 redirect_url: redirectUrl,
+                ios_url: iosUrl,
+                android_url: redirectUrl,
                 payload: payloadB64,
                 sig: signature,
                 expires: expires,
                 tid: tid,
-                amount: paymentAmount.toString()
+                amount: paymentAmount.toString(),
+                device: isIOS ? 'ios' : isAndroid ? 'android' : 'desktop'
             };
         }
 
